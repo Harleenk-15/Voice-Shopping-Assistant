@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Shopping Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #74ebd5, #acb6e5);
+            padding: 40px;
+            transition: background 0.8s ease;
+        }
+
+        h1 {
+            color: #222;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 8px;
+        }
+
+        .clear-btn {
+            background: #e74c3c;
+        }
+
+        .container {
+            background: white;
+            width: 320px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        .tag {
+            float: right;
+            background: #ddd;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .total {
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 18px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Voice Shopping Assistant</h1>
+<button onclick="startListening()">🎤 Speak</button>
+<button class="clear-btn" onclick="clearList()">Clear List</button>
+
+<div class="container">
+    <ul id="list"></ul>
+    <div class="total" id="total">Total: ₹0</div>
+</div>
+
+<div class="footer">
+    Project by: <b><i>Harleen Kaur</i></b>
+</div>
+
+<script>
+let shoppingList = JSON.parse(localStorage.getItem("shoppingList")) || [];
+
+const gradients = [
+    "linear-gradient(to right, #74ebd5, #acb6e5)",
+    "linear-gradient(to right, #fbc2eb, #a6c1ee)",
+    "linear-gradient(to right, #ffecd2, #fcb69f)",
+    "linear-gradient(to right, #cfd9df, #e2ebf0)",
+    "linear-gradient(to right, #d4fc79, #96e6a1)"
+];
+
+function changeBackground() {
+    const random = Math.floor(Math.random() * gradients.length);
+    document.body.style.background = gradients[random];
+}
+
+function saveList() {
+    localStorage.setItem("shoppingList", JSON.stringify(shoppingList));
+}
+
+function detectCategory(name) {
+    if (name.includes("milk") || name.includes("cheese") || name.includes("butter"))
+        return "dairy";
+    if (name.includes("rice") || name.includes("wheat") || name.includes("bread"))
+        return "grains";
+    if (name.includes("apple") || name.includes("banana") || name.includes("mango"))
+        return "fruits";
+    return "general";
+}
+
+function updateList() {
+    const ul = document.getElementById("list");
+    const totalDiv = document.getElementById("total");
+    ul.innerHTML = "";
+
+    let total = 0;
+
+    shoppingList.forEach(item => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+            ${item.name} - ₹${item.price}
+            <span class="tag">${item.category}</span>
+        `;
+        ul.appendChild(li);
+        total += item.price;
+    });
+
+    totalDiv.textContent = "Total: ₹" + total;
+    saveList();
+}
+
+function clearList() {
+    shoppingList = [];
+    updateList();
+    speak("Shopping list cleared");
+}
+
+function startListening() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.start();
+
+    recognition.onresult = function(event) {
+        const command = event.results[0][0].transcript.toLowerCase();
+        alert("You said: " + command);
+
+        if (command.includes("add")) {
+            let words = command.replace("add", "").trim().split(" ");
+            let price = parseInt(words.pop());
+            let name = words.join(" ");
+
+            if (!isNaN(price) && name) {
+                let category = detectCategory(name);
+                shoppingList.push({ name, price, category });
+                speak(name + " added");
+                changeBackground();
+            } else {
+                speak("Please say item with price");
+            }
+        }
+
+        if (command.includes("remove")) {
+            let name = command.replace("remove", "").trim();
+            shoppingList = shoppingList.filter(item => item.name !== name);
+            speak(name + " removed");
+        }
+
+        updateList();
+    };
+}
+
+function speak(text) {
+    const speech = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(speech);
+}
+
+updateList();
+</script>
+
+</body>
+</html>
